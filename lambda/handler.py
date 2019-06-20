@@ -1,9 +1,6 @@
-import json
 import os
-
 import boto3
 
-s3_res = boto3.resource('s3')
 batch_client = boto3.client('batch')
 
 JOB_DEFINITION = os.getenv('JOB_DEFINITION')
