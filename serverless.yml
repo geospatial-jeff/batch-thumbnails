@@ -4,13 +4,8 @@ provider:
   runtime: python3.7
   stage: dev
   region: us-east-1
-  iamRoleStatementsName: ${self:service}-role
-  iamRoleStatements:
-    - Action:
-      - batch:SubmitJob
-      Effect: Allow
-      Resource:
-        - arn:aws:batch:*
+  iamManagedPolicies:
+    - arn:aws:iam::aws:policy/AWSBatchFullAccess
 
 functions:
 
