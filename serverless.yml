@@ -1,0 +1,164 @@
+service: batch-thumbnails
+provider:
+  name: aws
+  runtime: python3.7
+  stage: dev
+  region: us-east-1
+
+resources:
+  Resources:
+
+    BatchComputeEnvironment:
+      DependsOn:
+        - BatchInstanceRole
+        - SecurityGroup
+        - AWSBatchServiceRole
+      Type: AWS::Batch::ComputeEnvironment
+      Properties:
+        ComputeEnvironmentName: batch-thumbnails
+        ComputeResources:
+          InstanceRole:
+            Fn::GetAtt:
+              - BatchInstanceProfile
+              - Arn
+          InstanceTypes:
+            - m5.large
+          MaxvCpus: 8
+          MinvCpus: 2
+          SecurityGroupIds:
+            - Fn::GetAtt:
+                - SecurityGroup
+                - GroupId
+          Subnets:
+            - <subnet1>
+          Type: EC2
+        ServiceRole:
+          Fn::GetAtt:
+            - AWSBatchServiceRole
+            - Arn
+        State: ENABLED
+        Type: MANAGED
+
+    BatchJobQueue:
+      Type: AWS::Batch::JobQueue
+      Properties:
+        ComputeEnvironmentOrder:
+          - Order: 1
+            ComputeEnvironment:
+              Ref: BatchComputeEnvironment
+        State: ENABLED
+        Priority: 1
+        JobQueueName: thumbnailJobQueue
+
+    BatchJobDefinition:
+      Type: AWS::Batch::JobDefinition
+      Properties:
+        Type: container
+        JobDefinitionName: create-thumbnails
+        RetryStrategy:
+          Attempts: 1
+        ContainerProperties:
+          Command:
+            - python
+            - build_thumbnails.py
+            - Ref::in_bucket
+            - Ref::in_key
+          Memory: 4000
+          Privileged: true
+          JobRoleArn:
+            Fn::GetAtt:
+              - AWSBatchJobRole
+              - Arn
+          ReadonlyRootFilesystem: false
+          Vcpus: 1
+          Image: geospatialjeff/batch-thumbnails:latest
+
+    AWSBatchJobRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: ecs-tasks.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: batch-thumbnail-policy
+            PolicyDocument:
+              Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - arn:aws:s3:::*
+        Path: /
+
+    AWSBatchServiceRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: batch.amazonaws.com
+              Action: sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
+        Path: /service-role/
+
+    BatchInstanceRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: ec2.amazonaws.com
+              Action: sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+        Path: /
+
+    BatchInstanceProfile:
+      DependsOn:
+        - BatchInstanceRole
+      Type: AWS::IAM::InstanceProfile
+      Properties:
+        Roles:
+          - Ref: BatchInstanceRole
+        Path: /
+
+    SecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupName: ${self:service}-sg
+        GroupDescription: Security group for ${self:service}
+        VpcId: <vpcid>
+        SecurityGroupEgress:
+          CidrIp: 0.0.0.0/0
+          IpProtocol: -1
+        SecurityGroupIngress:
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 443
+            ToPort: 443
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 5432
+            ToPort: 5432
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 8000
+            ToPort: 8000
