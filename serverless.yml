@@ -4,6 +4,27 @@ provider:
   runtime: python3.7
   stage: dev
   region: us-east-1
+  iamRoleStatementsName: ${self:service}-role
+  iamRoleStatements:
+    - Action:
+      - batch:SubmitJob
+      Effect: Allow
+      Resource:
+        - arn:aws:batch:*
+
+functions:
+
+  batchThumbnailsKickoff:
+    environment:
+      JOB_DEFINITION:
+        Ref: BatchJobDefinition
+      JOB_QUEUE:
+        Ref: BatchJobQueue
+    events:
+      - s3:
+          bucket: batch-thumbnails-kickoff
+          event: s3:ObjectCreated:*
+    handler: handler.kickoff
 
 resources:
   Resources:
@@ -222,3 +243,6 @@ resources:
             IpProtocol: tcp
             FromPort: 8000
             ToPort: 8000
+
+package:
+  artifact: lambda-package.zip
