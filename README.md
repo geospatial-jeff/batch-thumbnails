@@ -5,7 +5,8 @@ Generate image thumbnails on AWS Batch
 1. Clone the library.
 2. Add subnet-ids and vpc-ids to `serverless.yml`
 3. Change other configuration options as needed.
-4. Deploy with `sls deploy -v`
+4. Build lambda deployment package with `bash scripts/package.sh`
+5. Deploy with `sls deploy -v`
 
 # Usage
 Kick off the service by uploading a JSON file to the ingest s3 bucket.  The service expects the following payload:
