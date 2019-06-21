@@ -25,6 +25,9 @@ def kickoff(event, context):
             'jobName': os.path.splitext(os.path.split(key)[-1])[0],
             'jobQueue': JOB_QUEUE,
             'jobDefinition': JOB_DEFINITION,
+            "arrayProperties": {
+                "size": 200
+            },
             'parameters': {
                 'in_bucket': bucket,
                 'in_key': key
