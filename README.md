@@ -1,7 +1,7 @@
 # batch-thumbnails
 Generate image thumbnails on AWS Batch
 
-# Installation
+# Deployment
 1. Clone the library.
 2. Add subnet-ids and vpc-ids to `serverless.yml`
 3. Change other configuration options as needed.
