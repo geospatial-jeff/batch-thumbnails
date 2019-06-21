@@ -11,18 +11,32 @@ import boto3
 
 s3_res = boto3.resource('s3')
 
-def build_thumbnail(input_bucket, input_key):
+def process_job(input_bucket, input_key):
     tempdir = tempfile.mkdtemp()
+
     content_object = s3_res.Object(input_bucket, input_key)
     file_content = content_object.get()['Body'].read().decode('utf-8')
     payload = json.loads(file_content)
 
-    item_to_process = payload['images'][int(os.getenv('AWS_BATCH_JOB_ARRAY_INDEX'))]
-    infile = item_to_process['input']
-    out_bucket = item_to_process['out_bucket']
-    out_key = item_to_process['out_key']
-    xsize = item_to_process['xsize']
-    ysize = item_to_process['ysize']
+    array_value = payload['images'][int(os.getenv('AWS_BATCH_JOB_ARRAY_INDEX'))]
+
+    # Allow for micro-batching
+    if type(array_value) is list:
+        for item in array_value:
+            build_thumbnail(item, tempdir)
+    else:
+        build_thumbnail(array_value, tempdir)
+
+    shutil.rmtree(tempdir)
+
+
+def build_thumbnail(job_params, tempdir):
+
+    infile = job_params['input']
+    out_bucket = job_params['out_bucket']
+    out_key = job_params['out_key']
+    xsize = job_params['xsize']
+    ysize = job_params['ysize']
     temppath = os.path.join(tempdir, str(uuid.uuid4()))
 
     # Create JPEG preview
@@ -30,9 +44,6 @@ def build_thumbnail(input_bucket, input_key):
 
     # Upload to target bucket/key
     s3_res.Object(out_bucket, out_key).upload_file(temppath)
-
-    shutil.rmtree(tempdir)
-
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
