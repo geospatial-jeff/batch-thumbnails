@@ -38,8 +38,8 @@ resources:
               - BatchInstanceProfile
               - Arn
           InstanceTypes:
-            - m5.large
-          MaxvCpus: 8
+            - c5
+          MaxvCpus: 36
           MinvCpus: 2
           SecurityGroupIds:
             - Fn::GetAtt:
@@ -69,7 +69,7 @@ resources:
       Properties:
         ComputeEnvironmentName: batch-thumbnails-spot
         ComputeResources:
-          BidPercentage: 50
+          BidPercentage: 80
           SpotIamFleetRole:
             Fn::GetAtt:
               - AmazonEC2SpotFleetRole
@@ -79,8 +79,8 @@ resources:
               - BatchInstanceProfile
               - Arn
           InstanceTypes:
-            - m5.large
-          MaxvCpus: 8
+            - c5
+          MaxvCpus: 36
           MinvCpus: 2
           SecurityGroupIds:
             - Fn::GetAtt:
@@ -111,6 +111,18 @@ resources:
         State: ENABLED
         Priority: 1
         JobQueueName: thumbnailJobQueue
+
+    BatchJobQueueSpot:
+      Type: AWS::Batch::JobQueue
+      Properties:
+        ComputeEnvironmentOrder:
+          - Order: 1
+            ComputeEnvironment:
+              Ref: BatchComputeEnvironmentSpot
+        State: ENABLED
+        Priority: 1
+        JobQueueName: thumbnailJobQueue-spot
+
 
     BatchJobDefinition:
       Type: AWS::Batch::JobDefinition
