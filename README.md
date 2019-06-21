@@ -1,5 +1,5 @@
 # batch-thumbnails
-Generate image thumbnails on AWS Batch
+Generate image thumbnails on AWS Batch with array jobs.
 
 # Deployment
 1. Clone the library.
